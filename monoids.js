@@ -34,7 +34,8 @@ console.log("Sum: ", mconcat([Sum(1),Sum(2),Sum(3),Sum(4)]))
 console.log("Prod: ", mconcat([Product(1),Product(2),Product(3),Product(4)]))
 console.log("Max: ", mconcat([Max(1), Max(2), Max(3), Max(4)]))
 
-// we can iterator here...
+
+// Here we rely on xs.fold, but we can define foldmap via the iterator protocal alone since it drops the shape.
 var foldMap = function(f,xs) {
   return xs.fold(function(acc, x){
     var fx = f(x);

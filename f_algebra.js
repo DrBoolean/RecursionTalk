@@ -7,25 +7,30 @@ var inspect = function (x){ if(!x) return x; return x.inspect ? x.inspect() : x;
 var head = function(xs) { return xs[0]; }
 var tail = function(xs) { return xs.slice(1, xs.length); }
 
+// Disclaimer: In a dynamic lang the Fx type isn't totally necessary. With it, however, you can define cata/ana via hylo:
+// hylo = function(f, g) { return compose(cata(f), ana(g)) }
+// cata = function(f) { return compose(hylo, f, unfix) }
+// ana = function(f) { return compose(hylo, Fix, f) }
+
 var cata = curry(function(f, x) { return compose(f, map(cata(f)))(x) })
 
 
 var lst = Cons(6, Cons(4, Cons(2, Nil)))
 var sum = cata(function(x){ return (x === Nil) ? 0 : x.head + x.tail; }, lst);
-console.log("sum cata", sum);
+console.log("Sum cata on list", sum);
 
 
 
 //ana :: (a -> t a) -> a -> t
 var ana = curry(function(g, a) { return compose(map(ana(g)), g)(a); })
 
-var listToLinked = function(seed) {
+var arrToLinked = function(seed) {
   return ana(function(xs) {
     return (xs.length === 0) ? Nil : Cons(head(xs), tail(xs));
   }, seed)
 }
 
-console.log("List Ana", listToLinked([1,2,3,4,5]));
+console.log("Turn array to list via ana:", arrToLinked([1,2,3,4,5]));
 
 
 var rangeana = function(initial, count) {
@@ -35,7 +40,7 @@ var rangeana = function(initial, count) {
   }, initial)
 }
 
-console.log("Range Ana", rangeana(2, 10));
+console.log("Range anamorphism on list", rangeana(2, 10));
 
 
 // hylo :: Functor f => (f b -> b) -> (a -> f a) -> a -> b
@@ -51,11 +56,11 @@ var makeAlphabet = function(b) {
   if(b > 25) return Nil;
   return Cons(String.fromCharCode(b+65), b+1);
 }
-var anAlph = ana(makeAlphabet, 0);
-console.log("AA", cata(joinAlphabet, anAlph));
-console.log("BB", anAlph);
 
-hylo(joinAlphabet, makeAlphabet, 0)
+console.log("Join Alphabet via hylomorphism", hylo(joinAlphabet, makeAlphabet, 0));
+
+
+//========= Program Via F-Alg==========
 
 var Const = function(x) { return new _Const(x); };
 var _Const = function(val) { this.val = val; };
@@ -87,12 +92,14 @@ var interpret = function(a) {
   }
 }
 
-var testExpr = Mul(Add(Const(2), Const(3)), Const(4))
-var res = cata(interpret, testExpr);
-console.log("ADD/MUL", testExpr)
-console.log("res", res)
+var program = Mul(Add(Const(2), Const(3)), Const(4))
+var res = cata(interpret, program);
+console.log("Program", program)
+console.log("Program result", res)
 
 
+
+//======== Progam 2 =======
 var _Concat = function(v, next) { this.val = v; this.next = next; };
 var Concat = function(v, x){ return new _Concat(v, x); }
 _Concat.prototype.inspect = function(){ return 'Concat('+inspect(this.val)+', '+inspect(this.next)+')'; }
@@ -133,11 +140,8 @@ var inter = function(t) {
 }
 
 
+var prog = Concat("world", Replace("h", "m", Input("hello")));
 
-var p = Concat("world", Replace("h", "m", Input("hello")));
-//=> Concat(world, Replace(h, m, Input(hello))
-
-var res = cata(inter, p)
-console.log("RES", res);
-//=> melloworld
-//=> concatting world after replacing h with m on hello
+console.log("Program 2", prog);
+console.log("Program 2 result", cata(inter, prog));
+console.log("Program 2 print result", cata(printy, prog));
